@@ -1,0 +1,1755 @@
+openapi: 3.1.0
+info:
+  title: OrbitOS API
+  description: |
+    REST API for OrbitOS - An AI-native operating system for designing, running, and transforming businesses.
+
+    ## Authentication
+    All endpoints except `/health` require JWT authentication via Bearer token.
+
+    ## Multi-Tenancy
+    All organization-scoped resources are accessed via `/organizations/{orgId}/...` paths.
+    The authenticated user must have appropriate membership in the organization.
+
+    ## SOC 2 Compliance
+    This API implements SOC 2 Type II controls. See SEC-001 for details.
+  version: 0.8.0
+  contact:
+    name: OrbitOS Team
+    email: api@orbitos.io
+  license:
+    name: Proprietary
+    url: https://orbitos.io/license
+
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local development
+  - url: https://api.orbitos.io/v1
+    description: Production
+
+tags:
+  - name: Health
+    description: System health and readiness checks
+  - name: Auth
+    description: Authentication and authorization
+  - name: Organizations
+    description: Organization management (ENT-003)
+  - name: Users
+    description: User management (ENT-001)
+  - name: Memberships
+    description: Organization memberships (ENT-002)
+  - name: Canvases
+    description: Business canvases (ENT-005) - Feature F1
+  - name: Resources
+    description: Resource registry (ENT-007) - Feature F3
+  - name: Processes
+    description: Process design (ENT-012) - Feature F2
+  - name: Activities
+    description: Process activities (ENT-013)
+  - name: Functions
+    description: Atomic work units (ENT-008)
+  - name: Roles
+    description: Role definitions (ENT-009)
+  - name: AI
+    description: AI query endpoints - Feature F7
+  - name: Health Dashboard
+    description: Organization health analytics - Feature F8
+
+paths:
+  # ============================================================================
+  # HEALTH CHECKS (No Auth Required)
+  # ============================================================================
+  /health:
+    get:
+      tags: [Health]
+      summary: Basic liveness check
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /health/ready:
+    get:
+      tags: [Health]
+      summary: Readiness check (includes dependencies)
+      operationId: getHealthReady
+      security: []
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthDetailedResponse'
+        '503':
+          description: Service not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthDetailedResponse'
+
+  # ============================================================================
+  # AUTHENTICATION
+  # ============================================================================
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate user
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user profile
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWithMemberships'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================================================
+  # ORGANIZATIONS (ENT-003)
+  # ============================================================================
+  /organizations:
+    get:
+      tags: [Organizations]
+      summary: List organizations for current user
+      operationId: listOrganizations
+      responses:
+        '200':
+          description: List of organizations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrganizationSummary'
+
+    post:
+      tags: [Organizations]
+      summary: Create new organization
+      operationId: createOrganization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationRequest'
+      responses:
+        '201':
+          description: Organization created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Slug already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /organizations/{orgId}:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+    get:
+      tags: [Organizations]
+      summary: Get organization details
+      operationId: getOrganization
+      responses:
+        '200':
+          description: Organization details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Organizations]
+      summary: Update organization
+      operationId: updateOrganization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganizationRequest'
+      responses:
+        '200':
+          description: Organization updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ============================================================================
+  # MEMBERSHIPS (ENT-002)
+  # ============================================================================
+  /organizations/{orgId}/members:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+    get:
+      tags: [Memberships]
+      summary: List organization members
+      operationId: listMembers
+      responses:
+        '200':
+          description: List of members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Membership'
+
+    post:
+      tags: [Memberships]
+      summary: Invite user to organization
+      operationId: inviteMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteMemberRequest'
+      responses:
+        '201':
+          description: Invitation sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /organizations/{orgId}/members/{memberId}:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+      - $ref: '#/components/parameters/MemberId'
+    patch:
+      tags: [Memberships]
+      summary: Update member access level
+      operationId: updateMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMemberRequest'
+      responses:
+        '200':
+          description: Member updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [Memberships]
+      summary: Remove member from organization
+      operationId: removeMember
+      responses:
+        '204':
+          description: Member removed
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ============================================================================
+  # CANVASES (ENT-005) - Feature F1
+  # ============================================================================
+  /organizations/{orgId}/canvases:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+    get:
+      tags: [Canvases]
+      summary: List canvases
+      operationId: listCanvases
+      parameters:
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/CanvasType'
+        - name: state
+          in: query
+          schema:
+            $ref: '#/components/schemas/CanvasState'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: List of canvases
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanvasListResponse'
+
+    post:
+      tags: [Canvases]
+      summary: Create new canvas
+      operationId: createCanvas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCanvasRequest'
+      responses:
+        '201':
+          description: Canvas created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Canvas'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /organizations/{orgId}/canvases/{canvasId}:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+      - $ref: '#/components/parameters/CanvasId'
+    get:
+      tags: [Canvases]
+      summary: Get canvas with all blocks
+      operationId: getCanvas
+      responses:
+        '200':
+          description: Canvas details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanvasWithBlocks'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Canvases]
+      summary: Update canvas
+      operationId: updateCanvas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCanvasRequest'
+      responses:
+        '200':
+          description: Canvas updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Canvas'
+
+    delete:
+      tags: [Canvases]
+      summary: Archive canvas (soft delete)
+      operationId: deleteCanvas
+      responses:
+        '204':
+          description: Canvas archived
+
+  /organizations/{orgId}/canvases/{canvasId}/duplicate:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+      - $ref: '#/components/parameters/CanvasId'
+    post:
+      tags: [Canvases]
+      summary: Duplicate canvas
+      operationId: duplicateCanvas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateCanvasRequest'
+      responses:
+        '201':
+          description: Canvas duplicated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Canvas'
+
+  # ============================================================================
+  # RESOURCES (ENT-007) - Feature F3
+  # ============================================================================
+  /organizations/{orgId}/resources:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+    get:
+      tags: [Resources]
+      summary: List resources
+      operationId: listResources
+      parameters:
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/ResourceType'
+        - name: search
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceListResponse'
+
+    post:
+      tags: [Resources]
+      summary: Create resource
+      operationId: createResource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateResourceRequest'
+      responses:
+        '201':
+          description: Resource created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+
+  /organizations/{orgId}/resources/{resourceId}:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+      - $ref: '#/components/parameters/ResourceId'
+    get:
+      tags: [Resources]
+      summary: Get resource details
+      operationId: getResource
+      responses:
+        '200':
+          description: Resource details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceWithRelations'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Resources]
+      summary: Update resource
+      operationId: updateResource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateResourceRequest'
+      responses:
+        '200':
+          description: Resource updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+
+    delete:
+      tags: [Resources]
+      summary: Archive resource (soft delete)
+      operationId: deleteResource
+      responses:
+        '204':
+          description: Resource archived
+
+  # ============================================================================
+  # PROCESSES (ENT-012) - Feature F2
+  # ============================================================================
+  /organizations/{orgId}/processes:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+    get:
+      tags: [Processes]
+      summary: List processes
+      operationId: listProcesses
+      parameters:
+        - name: state
+          in: query
+          schema:
+            $ref: '#/components/schemas/ProcessState'
+        - name: stateType
+          in: query
+          schema:
+            $ref: '#/components/schemas/ProcessStateType'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: List of processes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessListResponse'
+
+    post:
+      tags: [Processes]
+      summary: Create process
+      operationId: createProcess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProcessRequest'
+      responses:
+        '201':
+          description: Process created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+
+  /organizations/{orgId}/processes/{processId}:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+      - $ref: '#/components/parameters/ProcessId'
+    get:
+      tags: [Processes]
+      summary: Get process with activities
+      operationId: getProcess
+      responses:
+        '200':
+          description: Process details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessWithActivities'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Processes]
+      summary: Update process
+      operationId: updateProcess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProcessRequest'
+      responses:
+        '200':
+          description: Process updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+
+    delete:
+      tags: [Processes]
+      summary: Archive process (soft delete)
+      operationId: deleteProcess
+      responses:
+        '204':
+          description: Process archived
+
+  /organizations/{orgId}/processes/{processId}/activities:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+      - $ref: '#/components/parameters/ProcessId'
+    post:
+      tags: [Activities]
+      summary: Add activity to process
+      operationId: createActivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActivityRequest'
+      responses:
+        '201':
+          description: Activity created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activity'
+
+  /organizations/{orgId}/processes/{processId}/activities/reorder:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+      - $ref: '#/components/parameters/ProcessId'
+    put:
+      tags: [Activities]
+      summary: Reorder activities
+      operationId: reorderActivities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderActivitiesRequest'
+      responses:
+        '200':
+          description: Activities reordered
+
+  # ============================================================================
+  # AI QUERIES - Feature F7
+  # ============================================================================
+  /organizations/{orgId}/ai/query:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+    post:
+      tags: [AI]
+      summary: Submit AI query about organization
+      operationId: submitAiQuery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiQueryRequest'
+      responses:
+        '200':
+          description: AI response (streaming)
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/AiStreamEvent'
+        '429':
+          description: Rate limit exceeded (10 req/min)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /organizations/{orgId}/ai/suggestions:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+    post:
+      tags: [AI]
+      summary: Get AI suggestions for content
+      operationId: getAiSuggestions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiSuggestionRequest'
+      responses:
+        '200':
+          description: Suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiSuggestionResponse'
+
+  # ============================================================================
+  # HEALTH DASHBOARD - Feature F8
+  # ============================================================================
+  /organizations/{orgId}/health:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+    get:
+      tags: [Health Dashboard]
+      summary: Get organization health overview
+      operationId: getOrgHealth
+      responses:
+        '200':
+          description: Health metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgHealthResponse'
+
+  /organizations/{orgId}/health/spof:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+    get:
+      tags: [Health Dashboard]
+      summary: Get single points of failure
+      operationId: getSpofAnalysis
+      responses:
+        '200':
+          description: SPOF analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpofAnalysisResponse'
+
+  /organizations/{orgId}/health/coverage:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+    get:
+      tags: [Health Dashboard]
+      summary: Get function coverage analysis
+      operationId: getCoverageAnalysis
+      responses:
+        '200':
+          description: Coverage analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoverageAnalysisResponse'
+
+  /organizations/{orgId}/health/workload:
+    parameters:
+      - $ref: '#/components/parameters/OrgId'
+    get:
+      tags: [Health Dashboard]
+      summary: Get workload distribution
+      operationId: getWorkloadAnalysis
+      responses:
+        '200':
+          description: Workload analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadAnalysisResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from /auth/login
+
+  parameters:
+    OrgId:
+      name: orgId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Organization ID
+
+    MemberId:
+      name: memberId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    CanvasId:
+      name: canvasId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    ResourceId:
+      name: resourceId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    ProcessId:
+      name: processId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    PageToken:
+      name: pageToken
+      in: query
+      schema:
+        type: string
+      description: Cursor for pagination
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ============================================================================
+    # COMMON SCHEMAS
+    # ============================================================================
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "Resource not found"
+        details:
+          type: object
+          additionalProperties: true
+
+    ValidationError:
+      type: object
+      required: [code, message, errors]
+      properties:
+        code:
+          type: string
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          example: "Invalid request"
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+              code:
+                type: string
+
+    PaginationMeta:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+        pageSize:
+          type: integer
+        nextPageToken:
+          type: string
+          nullable: true
+
+    # ============================================================================
+    # HEALTH SCHEMAS
+    # ============================================================================
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+
+    HealthDetailedResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        checks:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [healthy, unhealthy]
+            cache:
+              type: string
+              enum: [healthy, unhealthy]
+            ai_service:
+              type: string
+              enum: [healthy, unhealthy]
+
+    # ============================================================================
+    # AUTH SCHEMAS
+    # ============================================================================
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 12
+
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          description: Seconds until expiration
+        user:
+          $ref: '#/components/schemas/User'
+
+    # ============================================================================
+    # USER SCHEMAS (ENT-001)
+    # ============================================================================
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+          example: "America/New_York"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserWithMemberships:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            memberships:
+              type: array
+              items:
+                $ref: '#/components/schemas/MembershipSummary'
+
+    # ============================================================================
+    # ORGANIZATION SCHEMAS (ENT-003)
+    # ============================================================================
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+        logoUrl:
+          type: string
+          format: uri
+          nullable: true
+        purpose:
+          type: string
+          nullable: true
+          description: "WHY - The aspirational reason beyond profit"
+        vision:
+          type: string
+          nullable: true
+        values:
+          type: array
+          items:
+            type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        industry:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    OrganizationSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        logoUrl:
+          type: string
+          format: uri
+          nullable: true
+        myRole:
+          $ref: '#/components/schemas/AccessLevel'
+
+    CreateOrganizationRequest:
+      type: object
+      required: [name, slug]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          maxLength: 63
+        purpose:
+          type: string
+        vision:
+          type: string
+        values:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        industry:
+          type: string
+
+    UpdateOrganizationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        logoUrl:
+          type: string
+          format: uri
+        purpose:
+          type: string
+        vision:
+          type: string
+        values:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        industry:
+          type: string
+
+    # ============================================================================
+    # MEMBERSHIP SCHEMAS (ENT-002)
+    # ============================================================================
+    AccessLevel:
+      type: string
+      enum: [owner, admin, member, viewer]
+      description: |
+        - owner: Full control, can delete organization
+        - admin: Full control except delete org and demote owners
+        - member: Can create/edit resources, cannot manage members
+        - viewer: Read-only access
+
+    Membership:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        accessLevel:
+          $ref: '#/components/schemas/AccessLevel'
+        user:
+          $ref: '#/components/schemas/User'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    MembershipSummary:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          format: uuid
+        organizationName:
+          type: string
+        organizationSlug:
+          type: string
+        accessLevel:
+          $ref: '#/components/schemas/AccessLevel'
+
+    InviteMemberRequest:
+      type: object
+      required: [email, accessLevel]
+      properties:
+        email:
+          type: string
+          format: email
+        accessLevel:
+          $ref: '#/components/schemas/AccessLevel'
+
+    UpdateMemberRequest:
+      type: object
+      required: [accessLevel]
+      properties:
+        accessLevel:
+          $ref: '#/components/schemas/AccessLevel'
+
+    # ============================================================================
+    # CANVAS SCHEMAS (ENT-005)
+    # ============================================================================
+    CanvasType:
+      type: string
+      enum: [business_model, lean, value_proposition]
+
+    CanvasState:
+      type: string
+      enum: [draft, active, archived]
+
+    Canvas:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        type:
+          $ref: '#/components/schemas/CanvasType'
+        state:
+          $ref: '#/components/schemas/CanvasState'
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+        updatedBy:
+          type: string
+          format: uuid
+
+    CanvasWithBlocks:
+      allOf:
+        - $ref: '#/components/schemas/Canvas'
+        - type: object
+          properties:
+            blocks:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/CanvasBlock'
+
+    CanvasBlock:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Block identifier (e.g., "key_partners", "value_propositions")
+        content:
+          type: string
+          description: Markdown content
+        linkedResourceIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    CanvasListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Canvas'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateCanvasRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        type:
+          $ref: '#/components/schemas/CanvasType'
+
+    UpdateCanvasRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        state:
+          $ref: '#/components/schemas/CanvasState'
+        blocks:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/CanvasBlock'
+
+    DuplicateCanvasRequest:
+      type: object
+      properties:
+        newName:
+          type: string
+
+    # ============================================================================
+    # RESOURCE SCHEMAS (ENT-007)
+    # ============================================================================
+    ResourceType:
+      type: string
+      enum: [person, tool, partner, asset, budget, knowledge]
+
+    Resource:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ResourceType'
+        subtypeId:
+          type: string
+          format: uuid
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+        linkedUserId:
+          type: string
+          format: uuid
+          nullable: true
+          description: For person resources linked to a User account
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ResourceWithRelations:
+      allOf:
+        - $ref: '#/components/schemas/Resource'
+        - type: object
+          properties:
+            capabilities:
+              type: array
+              items:
+                $ref: '#/components/schemas/FunctionCapabilitySummary'
+            roleAssignments:
+              type: array
+              items:
+                $ref: '#/components/schemas/RoleAssignmentSummary'
+            activityAssignments:
+              type: array
+              items:
+                $ref: '#/components/schemas/ActivityAssignmentSummary'
+
+    ResourceListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateResourceRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/ResourceType'
+        subtypeId:
+          type: string
+          format: uuid
+        description:
+          type: string
+        metadata:
+          type: object
+
+    UpdateResourceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        metadata:
+          type: object
+
+    FunctionCapabilitySummary:
+      type: object
+      properties:
+        functionId:
+          type: string
+          format: uuid
+        functionName:
+          type: string
+        capabilityLevel:
+          type: string
+          enum: [capable, authorized, both]
+
+    RoleAssignmentSummary:
+      type: object
+      properties:
+        roleId:
+          type: string
+          format: uuid
+        roleName:
+          type: string
+        isPrimary:
+          type: boolean
+
+    ActivityAssignmentSummary:
+      type: object
+      properties:
+        activityId:
+          type: string
+          format: uuid
+        activityName:
+          type: string
+        processName:
+          type: string
+
+    # ============================================================================
+    # PROCESS SCHEMAS (ENT-012)
+    # ============================================================================
+    ProcessState:
+      type: string
+      enum: [draft, active, deprecated, archived]
+
+    ProcessStateType:
+      type: string
+      enum: [current, target]
+      description: Whether this is current state (as-is) or target state (to-be)
+
+    Process:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        purpose:
+          type: string
+          nullable: true
+        trigger:
+          type: string
+          nullable: true
+        output:
+          type: string
+          nullable: true
+        state:
+          $ref: '#/components/schemas/ProcessState'
+        stateType:
+          $ref: '#/components/schemas/ProcessStateType'
+        targetVersionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Link to target version if this is current
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProcessWithActivities:
+      allOf:
+        - $ref: '#/components/schemas/Process'
+        - type: object
+          properties:
+            activities:
+              type: array
+              items:
+                $ref: '#/components/schemas/Activity'
+
+    ProcessListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Process'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateProcessRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        purpose:
+          type: string
+        trigger:
+          type: string
+        output:
+          type: string
+        stateType:
+          $ref: '#/components/schemas/ProcessStateType'
+
+    UpdateProcessRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        purpose:
+          type: string
+        trigger:
+          type: string
+        output:
+          type: string
+        state:
+          $ref: '#/components/schemas/ProcessState'
+
+    # ============================================================================
+    # ACTIVITY SCHEMAS (ENT-013)
+    # ============================================================================
+    Activity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        processId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        instructions:
+          type: string
+          nullable: true
+          description: SOP content in markdown
+        sequenceOrder:
+          type: integer
+        estimatedMinutes:
+          type: integer
+          nullable: true
+        assignedResourceIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    CreateActivityRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        instructions:
+          type: string
+        estimatedMinutes:
+          type: integer
+        sequenceOrder:
+          type: integer
+        assignedResourceIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    ReorderActivitiesRequest:
+      type: object
+      required: [activityIds]
+      properties:
+        activityIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Activity IDs in new order
+
+    # ============================================================================
+    # AI SCHEMAS
+    # ============================================================================
+    AiQueryRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          example: "What happens if Maria leaves the company?"
+        context:
+          type: object
+          properties:
+            includeCanvases:
+              type: boolean
+              default: true
+            includeProcesses:
+              type: boolean
+              default: true
+            includeResources:
+              type: boolean
+              default: true
+
+    AiStreamEvent:
+      type: object
+      properties:
+        event:
+          type: string
+          enum: [start, delta, done, error]
+        data:
+          type: string
+        metadata:
+          type: object
+
+    AiSuggestionRequest:
+      type: object
+      required: [type, context]
+      properties:
+        type:
+          type: string
+          enum: [canvas_block, process_activity, resource_description]
+        context:
+          type: object
+          description: Context-specific data for suggestion
+
+    AiSuggestionResponse:
+      type: object
+      properties:
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              content:
+                type: string
+              confidence:
+                type: number
+
+    # ============================================================================
+    # HEALTH DASHBOARD SCHEMAS
+    # ============================================================================
+    OrgHealthResponse:
+      type: object
+      properties:
+        overallScore:
+          type: number
+          minimum: 0
+          maximum: 100
+        metrics:
+          type: object
+          properties:
+            totalResources:
+              type: integer
+            totalProcesses:
+              type: integer
+            totalFunctions:
+              type: integer
+            spofCount:
+              type: integer
+            coveragePercentage:
+              type: number
+        lastUpdated:
+          type: string
+          format: date-time
+
+    SpofAnalysisResponse:
+      type: object
+      properties:
+        spofs:
+          type: array
+          items:
+            type: object
+            properties:
+              functionId:
+                type: string
+                format: uuid
+              functionName:
+                type: string
+              resourceId:
+                type: string
+                format: uuid
+              resourceName:
+                type: string
+              impactedProcesses:
+                type: array
+                items:
+                  type: string
+
+    CoverageAnalysisResponse:
+      type: object
+      properties:
+        totalFunctions:
+          type: integer
+        coveredFunctions:
+          type: integer
+        uncoveredFunctions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+
+    WorkloadAnalysisResponse:
+      type: object
+      properties:
+        distribution:
+          type: array
+          items:
+            type: object
+            properties:
+              resourceId:
+                type: string
+                format: uuid
+              resourceName:
+                type: string
+              functionCount:
+                type: integer
+              roleCount:
+                type: integer
+              activityCount:
+                type: integer
+              workloadScore:
+                type: number
+
+security:
+  - bearerAuth: []

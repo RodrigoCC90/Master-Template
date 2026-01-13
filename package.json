@@ -1,0 +1,39 @@
+{
+  "name": "orbitos-workspace",
+  "version": "0.8.0",
+  "description": "OrbitOS Monorepo Workspace - AI Development Ready",
+  "private": true,
+  "scripts": {
+    "setup": "./scripts/setup-workspace.sh",
+    "start": "./scripts/start-all.sh",
+    "stop": "./scripts/stop-all.sh",
+    "check:web": "./scripts/check-web.sh",
+    "doctor": "./scripts/doctor.sh",
+    "test": "./scripts/test-all.sh",
+    "validate": "./scripts/validate-all.sh",
+    "validate:openapi": "npx @redocly/cli lint contracts/openapi.yaml",
+    "generate:types": "npx openapi-typescript contracts/openapi.yaml -o orbitos-web/app/types/api.ts",
+    "db:start": "docker start orbitos-postgres orbitos-redis",
+    "db:stop": "docker stop orbitos-postgres orbitos-redis",
+    "api:start": "cd orbitos-api && dotnet run",
+    "api:test": "cd orbitos-api && dotnet test",
+    "web:start": "cd orbitos-web && npm run dev",
+    "web:test": "cd orbitos-web && npm test",
+    "mobile:start": "cd orbitos-mobile && flutter run",
+    "mobile:test": "cd orbitos-mobile && flutter test"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.25.0",
+    "openapi-typescript": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "ai": {
+    "claude_md": "./CLAUDE.md",
+    "specs_path": "./specs",
+    "contracts_path": "./contracts",
+    "test_command": "npm test",
+    "validate_command": "npm run validate"
+  }
+}
