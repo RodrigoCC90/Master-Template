@@ -11,21 +11,20 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock useRuntimeConfig
-vi.mock('#app', () => ({
-  useRuntimeConfig: () => ({
-    public: {
-      apiBaseUrl: 'http://localhost:5027'
-    }
-  })
+// Mock useRuntimeConfig globally
+const useRuntimeConfigMock = vi.fn(() => ({
+  public: {
+    apiBaseUrl: 'http://localhost:5027'
+  }
 }))
+vi.stubGlobal('useRuntimeConfig', useRuntimeConfigMock)
 
 // Mock $fetch
 const mockFetch = vi.fn()
 vi.stubGlobal('$fetch', mockFetch)
 
 // Import after mocking
-import { useSuperAdmin } from '~/composables/useSuperAdmin'
+import { useSuperAdmin } from '@/composables/useSuperAdmin'
 
 describe('useSuperAdmin', () => {
   beforeEach(() => {
