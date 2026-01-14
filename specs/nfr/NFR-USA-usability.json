@@ -1,0 +1,168 @@
+{
+  "$schema": "../_meta/schema/nfr.schema.json",
+  "id": "NFR-USA",
+  "name": "Usability Requirements",
+  "description": "User experience, accessibility, and learnability requirements",
+  "version": "1.0.0",
+
+  "requirements": [
+    {
+      "id": "NFR-USA-001",
+      "name": "WCAG 2.1 AA Compliance",
+      "category": "accessibility",
+      "priority": "must",
+      "statement": "The system shall comply with WCAG 2.1 Level AA accessibility guidelines",
+      "implementation": {
+        "testing": "Automated + manual accessibility audits",
+        "tools": ["axe-core", "WAVE", "screen reader testing"]
+      }
+    },
+    {
+      "id": "NFR-USA-002",
+      "name": "Keyboard Navigation",
+      "category": "accessibility",
+      "priority": "must",
+      "statement": "The system shall be fully operable using keyboard only",
+      "implementation": {
+        "focus_visible": "Clear focus indicators on all interactive elements",
+        "skip_links": "Skip to main content link",
+        "tab_order": "Logical tab order following visual layout"
+      }
+    },
+    {
+      "id": "NFR-USA-003",
+      "name": "Screen Reader Support",
+      "category": "accessibility",
+      "priority": "must",
+      "statement": "The system shall be usable with screen readers (NVDA, VoiceOver, JAWS)",
+      "implementation": {
+        "aria_labels": "All interactive elements properly labeled",
+        "landmarks": "Proper use of landmark roles",
+        "live_regions": "Dynamic content changes announced"
+      }
+    },
+    {
+      "id": "NFR-USA-004",
+      "name": "Color Contrast",
+      "category": "accessibility",
+      "priority": "must",
+      "statement": "The system shall maintain minimum contrast ratios for text",
+      "implementation": {
+        "normal_text": "4.5:1 minimum",
+        "large_text": "3:1 minimum",
+        "ui_components": "3:1 minimum"
+      }
+    },
+    {
+      "id": "NFR-USA-005",
+      "name": "Responsive Design",
+      "category": "device_support",
+      "priority": "must",
+      "statement": "The system shall be usable across device sizes",
+      "breakpoints": {
+        "mobile": "375px - 767px",
+        "tablet": "768px - 1023px",
+        "desktop": "1024px - 1439px",
+        "large": "1440px+"
+      },
+      "note": "Complex editors may require minimum viewport width"
+    },
+    {
+      "id": "NFR-USA-006",
+      "name": "Browser Support",
+      "category": "device_support",
+      "priority": "must",
+      "statement": "The system shall support recent versions of major browsers",
+      "browsers": ["Chrome (last 2)", "Firefox (last 2)", "Safari (last 2)", "Edge (last 2)"],
+      "unsupported": "Internet Explorer"
+    },
+    {
+      "id": "NFR-USA-007",
+      "name": "Onboarding Experience",
+      "category": "learnability",
+      "priority": "should",
+      "statement": "The system shall enable new users to complete basic tasks without training",
+      "implementation": {
+        "guided_tour": "First-run experience walkthrough (optional)",
+        "contextual_help": "Tooltips and inline hints",
+        "empty_states": "Helpful empty states with clear CTAs"
+      }
+    },
+    {
+      "id": "NFR-USA-008",
+      "name": "Error Messages",
+      "category": "feedback",
+      "priority": "must",
+      "statement": "The system shall display clear, actionable error messages",
+      "implementation": {
+        "format": "What happened + How to fix it",
+        "location": "Near the source of the error",
+        "persistence": "Don't auto-dismiss error messages"
+      }
+    },
+    {
+      "id": "NFR-USA-009",
+      "name": "Loading States",
+      "category": "feedback",
+      "priority": "must",
+      "statement": "The system shall display loading indicators for operations over 300ms",
+      "implementation": {
+        "skeleton_loaders": "For content areas",
+        "spinners": "For buttons and small areas",
+        "progress": "For long operations (> 2 seconds)"
+      }
+    },
+    {
+      "id": "NFR-USA-010",
+      "name": "Undo Support",
+      "category": "error_recovery",
+      "priority": "should",
+      "statement": "The system shall allow undoing destructive actions where feasible",
+      "implementation": {
+        "pattern": "Toast with undo button",
+        "soft_delete": "Mark as deleted, actually delete after timeout"
+      }
+    },
+    {
+      "id": "NFR-USA-011",
+      "name": "Consistent Design Language",
+      "category": "consistency",
+      "priority": "must",
+      "statement": "The system shall use consistent design patterns throughout",
+      "implementation": {
+        "design_system": "Documented component library",
+        "tokens": "Consistent colors, spacing, typography",
+        "patterns": "Standard patterns for common interactions"
+      }
+    },
+    {
+      "id": "NFR-USA-012",
+      "name": "Internationalization Ready",
+      "category": "localization",
+      "priority": "could",
+      "statement": "The system shall be built with internationalization support",
+      "implementation": {
+        "i18n_framework": "All user-facing strings externalized",
+        "rtl_support": "Layout adapts to RTL languages (if required)",
+        "date_format": "Locale-aware date/time/number formatting"
+      },
+      "note": "Initial language per project requirements"
+    }
+  ],
+
+  "testing": {
+    "accessibility_audit": "Before each major release",
+    "usability_testing": "User testing sessions as needed",
+    "analytics": "Track task completion rates where applicable"
+  },
+
+  "traceability": {
+    "engineering_standards": "_meta/ENGINEERING-STANDARDS.md#13-accessibility-standards",
+    "test_suite": "TS-NFR-USA"
+  },
+
+  "meta": {
+    "created_at": "2025-01-13T00:00:00Z",
+    "updated_at": "2025-01-13T00:00:00Z"
+  }
+}

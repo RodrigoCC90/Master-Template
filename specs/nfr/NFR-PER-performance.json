@@ -1,0 +1,132 @@
+{
+  "$schema": "../_meta/schema/nfr.schema.json",
+  "id": "NFR-PER",
+  "name": "Performance Requirements",
+  "description": "Response time, throughput, and efficiency requirements",
+  "version": "1.0.0",
+
+  "requirements": [
+    {
+      "id": "NFR-PER-001",
+      "name": "Page Load Time",
+      "category": "response_time",
+      "priority": "must",
+      "statement": "The system shall load any page within 2 seconds on a standard broadband connection",
+      "metric": {
+        "name": "Time to Interactive (TTI)",
+        "target": "< 2000ms",
+        "measurement": "Lighthouse audit or equivalent",
+        "conditions": "3G Fast connection simulation"
+      },
+      "rationale": "User experience degrades significantly beyond 2 seconds"
+    },
+    {
+      "id": "NFR-PER-002",
+      "name": "API Response Time",
+      "category": "response_time",
+      "priority": "must",
+      "statement": "The system shall respond to API requests within 500ms for 95th percentile",
+      "metric": {
+        "name": "API Latency P95",
+        "target": "< 500ms",
+        "measurement": "Application metrics / APM",
+        "excludes": "Long-running operations (file uploads, exports, AI calls)"
+      }
+    },
+    {
+      "id": "NFR-PER-003",
+      "name": "Search Results",
+      "category": "response_time",
+      "priority": "should",
+      "statement": "The system shall return search results within 300ms",
+      "metric": {
+        "name": "Search Latency P95",
+        "target": "< 300ms",
+        "measurement": "Application metrics"
+      }
+    },
+    {
+      "id": "NFR-PER-004",
+      "name": "Dashboard Data Load",
+      "category": "response_time",
+      "priority": "must",
+      "statement": "The system shall load dashboard/summary data within 1 second",
+      "metric": {
+        "name": "Dashboard API Latency",
+        "target": "< 1000ms",
+        "measurement": "API response time",
+        "caching": "Enable caching for aggregated data"
+      }
+    },
+    {
+      "id": "NFR-PER-005",
+      "name": "UI Interaction Latency",
+      "category": "interaction",
+      "priority": "must",
+      "statement": "The system shall respond to user interactions within 100ms",
+      "metric": {
+        "name": "Interaction Latency",
+        "target": "< 100ms",
+        "measurement": "Performance profiling",
+        "scope": "Click handlers, form inputs, navigation"
+      }
+    },
+    {
+      "id": "NFR-PER-006",
+      "name": "Concurrent Users",
+      "category": "capacity",
+      "priority": "must",
+      "statement": "The system shall support the specified concurrent user load without degradation",
+      "metric": {
+        "name": "Concurrent User Capacity",
+        "target": "Configurable per deployment",
+        "measurement": "Load testing",
+        "degradation_threshold": "< 10% increase in response times at capacity"
+      }
+    },
+    {
+      "id": "NFR-PER-007",
+      "name": "Database Query Performance",
+      "category": "response_time",
+      "priority": "must",
+      "statement": "Database queries shall complete within acceptable time bounds",
+      "metric": {
+        "name": "Query Latency P95",
+        "targets": {
+          "simple_read": "< 10ms",
+          "complex_read": "< 50ms",
+          "write": "< 100ms"
+        },
+        "measurement": "Database metrics / slow query log"
+      }
+    },
+    {
+      "id": "NFR-PER-008",
+      "name": "Batch Processing",
+      "category": "batch_processing",
+      "priority": "should",
+      "statement": "Long-running operations shall use async processing with progress feedback",
+      "implementation": {
+        "pattern": "Background job with progress updates",
+        "feedback": "Progress indicator or notification on completion",
+        "timeout": "Configurable per operation type"
+      }
+    }
+  ],
+
+  "testing": {
+    "tools": ["k6 / Artillery", "Lighthouse", "Application Performance Monitoring"],
+    "frequency": "Performance tests run on every release",
+    "baseline": "Establish baseline in staging environment"
+  },
+
+  "traceability": {
+    "engineering_standards": "_meta/ENGINEERING-STANDARDS.md#12-performance-standards",
+    "test_suite": "TS-NFR-PER"
+  },
+
+  "meta": {
+    "created_at": "2025-01-13T00:00:00Z",
+    "updated_at": "2025-01-13T00:00:00Z"
+  }
+}

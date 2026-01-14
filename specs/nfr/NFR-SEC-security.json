@@ -1,0 +1,235 @@
+{
+  "$schema": "../_meta/schema/nfr.schema.json",
+  "id": "NFR-SEC",
+  "name": "Security Requirements",
+  "description": "Authentication, authorization, and data protection requirements aligned with SOC 2 Trust Service Criteria",
+  "version": "1.0.0",
+
+  "soc2_alignment": {
+    "framework": "SOC 2 Type II",
+    "trust_service_categories": ["CC (Security)", "A (Availability)", "PI (Processing Integrity)", "C (Confidentiality)", "P (Privacy)"],
+    "detailed_compliance": "L5-infrastructure/security/SEC-001-soc2-compliance.json",
+    "controls_matrix": "L5-infrastructure/security/SEC-002-controls-matrix.json"
+  },
+
+  "requirements": [
+    {
+      "id": "NFR-SEC-001",
+      "name": "Authentication Required",
+      "category": "authentication",
+      "priority": "must",
+      "soc2_tsc": ["CC6.1"],
+      "statement": "The system shall require authentication for all API endpoints except explicitly public endpoints (health checks, public assets)",
+      "implementation": {
+        "method": "JWT tokens via OAuth 2.0 / OIDC",
+        "session_duration": "Configurable, default 7 days with refresh tokens"
+      }
+    },
+    {
+      "id": "NFR-SEC-002",
+      "name": "Multi-Factor Authentication Support",
+      "category": "authentication",
+      "priority": "should",
+      "soc2_tsc": ["CC6.1"],
+      "statement": "The system shall support multi-factor authentication where enabled",
+      "implementation": {
+        "methods": ["TOTP", "SMS", "Email"],
+        "enforcement": "Organization-level setting, required for admin roles"
+      }
+    },
+    {
+      "id": "NFR-SEC-003",
+      "name": "Password Requirements",
+      "category": "authentication",
+      "priority": "must",
+      "soc2_tsc": ["CC6.1"],
+      "statement": "The system shall require passwords meeting minimum complexity standards",
+      "implementation": {
+        "min_length": 12,
+        "requires": ["uppercase", "lowercase", "number"],
+        "blocked": "Common passwords list",
+        "lockout": "Account lockout after configurable failed attempts"
+      }
+    },
+    {
+      "id": "NFR-SEC-004",
+      "name": "Data Encryption at Rest",
+      "category": "data_protection",
+      "priority": "must",
+      "soc2_tsc": ["CC6.8", "C1.1"],
+      "statement": "The system shall encrypt all stored data using AES-256 or equivalent encryption",
+      "implementation": {
+        "database": "Transparent Data Encryption (TDE) or equivalent",
+        "files": "Server-side encryption",
+        "keys": "Key management service (AWS KMS / Azure Key Vault / equivalent)"
+      }
+    },
+    {
+      "id": "NFR-SEC-005",
+      "name": "Data Encryption in Transit",
+      "category": "data_protection",
+      "priority": "must",
+      "soc2_tsc": ["CC6.8"],
+      "statement": "The system shall use TLS 1.2+ for all data in transit",
+      "implementation": {
+        "protocol": "TLS 1.2 minimum, TLS 1.3 preferred",
+        "hsts": "Strict-Transport-Security header required"
+      }
+    },
+    {
+      "id": "NFR-SEC-006",
+      "name": "Multi-Tenant Data Isolation",
+      "category": "authorization",
+      "priority": "must",
+      "soc2_tsc": ["CC6.2", "CC6.3"],
+      "statement": "The system shall ensure complete data isolation between organizations",
+      "implementation": {
+        "strategy": "Row-level security with organization_id on all tenant-scoped tables",
+        "testing": "Cross-tenant access tests must fail",
+        "audit": "Log any cross-tenant query attempts"
+      }
+    },
+    {
+      "id": "NFR-SEC-007",
+      "name": "Role-Based Access Control",
+      "category": "authorization",
+      "priority": "must",
+      "soc2_tsc": ["CC6.2", "CC6.3"],
+      "statement": "The system shall enforce role-based access control for all operations",
+      "implementation": {
+        "levels": "Minimum: owner, admin, member, viewer",
+        "customizable": "Project may define additional roles"
+      }
+    },
+    {
+      "id": "NFR-SEC-008",
+      "name": "API Rate Limiting",
+      "category": "protection",
+      "priority": "must",
+      "soc2_tsc": ["CC6.7"],
+      "statement": "The system shall rate limit API requests to prevent abuse",
+      "implementation": {
+        "limits": {
+          "authenticated": "Configurable, default 1000 requests/minute per user",
+          "unauthenticated": "Configurable, default 60 requests/minute per IP"
+        },
+        "response": "429 Too Many Requests with Retry-After header"
+      }
+    },
+    {
+      "id": "NFR-SEC-009",
+      "name": "Input Validation",
+      "category": "protection",
+      "priority": "must",
+      "soc2_tsc": ["PI1.2"],
+      "statement": "The system shall validate and sanitize all user input to prevent injection attacks",
+      "implementation": {
+        "sql": "Parameterized queries only (ORM enforced)",
+        "xss": "Output encoding, CSP headers",
+        "validation": "Schema validation for all inputs (Zod/FluentValidation)"
+      }
+    },
+    {
+      "id": "NFR-SEC-010",
+      "name": "Audit Logging",
+      "category": "monitoring",
+      "priority": "must",
+      "soc2_tsc": ["CC4.1", "CC7.2"],
+      "statement": "The system shall log all security-relevant events",
+      "implementation": {
+        "events": ["login", "logout", "permission_change", "data_export", "failed_auth", "admin_actions"],
+        "retention": "Configurable, minimum 1 year for compliance",
+        "fields": ["timestamp", "user_id", "org_id", "action", "ip_address", "user_agent", "request_id"]
+      }
+    },
+    {
+      "id": "NFR-SEC-011",
+      "name": "Sensitive Data Handling",
+      "category": "data_protection",
+      "priority": "must",
+      "soc2_tsc": ["C1.1", "P3.1"],
+      "statement": "The system shall not log or expose sensitive data in error messages or logs",
+      "implementation": {
+        "excluded_from_logs": ["passwords", "tokens", "personal_data", "secrets"],
+        "error_messages": "Generic errors to clients, detailed errors to secure logs only"
+      }
+    },
+    {
+      "id": "NFR-SEC-012",
+      "name": "Dependency Security",
+      "category": "supply_chain",
+      "priority": "must",
+      "soc2_tsc": ["CC7.1"],
+      "statement": "The system shall scan dependencies for known vulnerabilities",
+      "implementation": {
+        "tools": ["npm audit / dotnet audit", "Dependabot / Renovate", "Snyk or equivalent"],
+        "policy": "Critical vulnerabilities blocked from deployment"
+      }
+    },
+    {
+      "id": "NFR-SEC-013",
+      "name": "Access Revocation",
+      "category": "authorization",
+      "priority": "must",
+      "soc2_tsc": ["CC6.4"],
+      "statement": "When a user is removed from an organization, the system shall immediately invalidate all active sessions",
+      "implementation": {
+        "deprovisioning": "Instant access removal",
+        "session_invalidation": "All tokens revoked on removal"
+      }
+    },
+    {
+      "id": "NFR-SEC-014",
+      "name": "Incident Detection",
+      "category": "monitoring",
+      "priority": "must",
+      "soc2_tsc": ["CC7.1", "CC7.2"],
+      "statement": "The system shall detect and alert on security anomalies within reasonable time",
+      "implementation": {
+        "detection": "Logging with alerting rules",
+        "alerting": "Configurable notification channels",
+        "response": "Documented incident response playbook required"
+      }
+    },
+    {
+      "id": "NFR-SEC-015",
+      "name": "Data Deletion",
+      "category": "data_protection",
+      "priority": "must",
+      "soc2_tsc": ["C1.2", "P5.1"],
+      "statement": "When a user requests data deletion, the system shall permanently remove personal data within compliance timeframe",
+      "implementation": {
+        "soft_delete": "Immediate soft delete",
+        "hard_delete": "Permanent deletion after retention period (configurable, default 30 days)",
+        "backup_purge": "Removed from backups within 90 days"
+      }
+    }
+  ],
+
+  "compliance": {
+    "soc2": {
+      "framework": "SOC 2 Type II",
+      "status": "Framework ready for certification"
+    },
+    "gdpr": {
+      "scope": "Personal data handling for EU users",
+      "data_subject_rights": ["Access", "Rectification", "Erasure", "Portability", "Objection"]
+    }
+  },
+
+  "testing": {
+    "penetration_testing": "Annual third-party pen test recommended",
+    "vulnerability_scanning": "Automated scans in CI/CD",
+    "security_review": "All PRs reviewed for security implications"
+  },
+
+  "traceability": {
+    "engineering_standards": "_meta/ENGINEERING-STANDARDS.md#9-security-requirements",
+    "test_suite": "TS-NFR-SEC"
+  },
+
+  "meta": {
+    "created_at": "2025-01-13T00:00:00Z",
+    "updated_at": "2025-01-13T00:00:00Z"
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "$schema": "../_meta/schema/nfr.schema.json",
+  "id": "NFR-REL",
+  "name": "Reliability Requirements",
+  "description": "Uptime, fault tolerance, and recovery requirements",
+  "version": "1.0.0",
+
+  "requirements": [
+    {
+      "id": "NFR-REL-001",
+      "name": "Service Availability",
+      "category": "uptime",
+      "priority": "must",
+      "statement": "The system shall maintain target uptime (excluding planned maintenance)",
+      "metric": {
+        "target": "Configurable SLA (e.g., 99.9% = ~43 min downtime/month)",
+        "measurement": "Monthly availability calculation",
+        "excludes": "Announced maintenance windows"
+      }
+    },
+    {
+      "id": "NFR-REL-002",
+      "name": "Planned Maintenance Windows",
+      "category": "maintenance",
+      "priority": "must",
+      "statement": "When scheduled maintenance is required, the system shall notify users in advance",
+      "implementation": {
+        "notification": "Email + in-app banner",
+        "advance_notice": "Minimum 48 hours",
+        "duration": "Minimize maintenance window duration"
+      }
+    },
+    {
+      "id": "NFR-REL-003",
+      "name": "Graceful Degradation",
+      "category": "fault_tolerance",
+      "priority": "should",
+      "statement": "While a dependent service is unavailable, the system shall continue to function with reduced capability",
+      "implementation": {
+        "pattern": "Circuit breaker for external dependencies",
+        "fallbacks": "Document fallback behavior for each dependency",
+        "user_feedback": "Clear messaging when features are degraded"
+      }
+    },
+    {
+      "id": "NFR-REL-004",
+      "name": "Data Backup Frequency",
+      "category": "backup",
+      "priority": "must",
+      "statement": "The system shall perform automated backups regularly",
+      "implementation": {
+        "frequency": "Configurable (recommended: every 6 hours minimum)",
+        "retention": "Configurable retention period",
+        "type": "Incremental with periodic full backups"
+      }
+    },
+    {
+      "id": "NFR-REL-005",
+      "name": "Point-in-Time Recovery",
+      "category": "recovery",
+      "priority": "must",
+      "statement": "The system shall support point-in-time recovery within retention window",
+      "implementation": {
+        "database": "Continuous archiving with PITR (PostgreSQL WAL)",
+        "granularity": "Second-level recovery"
+      }
+    },
+    {
+      "id": "NFR-REL-006",
+      "name": "Recovery Time Objective (RTO)",
+      "category": "recovery",
+      "priority": "must",
+      "statement": "The system shall be recoverable within defined RTO",
+      "metric": {
+        "target": "Configurable (recommended: < 1 hour for production)",
+        "testing": "Regular disaster recovery drills"
+      }
+    },
+    {
+      "id": "NFR-REL-007",
+      "name": "Recovery Point Objective (RPO)",
+      "category": "recovery",
+      "priority": "must",
+      "statement": "The system shall lose minimal data in a disaster scenario",
+      "metric": {
+        "target": "Configurable (recommended: < 1 hour)",
+        "implementation": "Backup cycle + transaction logs"
+      }
+    },
+    {
+      "id": "NFR-REL-008",
+      "name": "Automatic Failover",
+      "category": "high_availability",
+      "priority": "should",
+      "statement": "When the primary database becomes unavailable, the system shall failover to replica",
+      "implementation": {
+        "database": "Multi-AZ or equivalent with automatic failover",
+        "detection": "Health checks with configurable interval"
+      }
+    },
+    {
+      "id": "NFR-REL-009",
+      "name": "Error Rate Threshold",
+      "category": "stability",
+      "priority": "must",
+      "statement": "The system shall maintain an error rate below threshold",
+      "metric": {
+        "target": "< 0.1% (5xx responses / total requests)",
+        "measurement": "Application metrics",
+        "alert": "Trigger alert if exceeded"
+      }
+    },
+    {
+      "id": "NFR-REL-010",
+      "name": "Transaction Integrity",
+      "category": "data_integrity",
+      "priority": "must",
+      "statement": "The system shall ensure ACID compliance for all database transactions",
+      "implementation": {
+        "database": "PostgreSQL with transaction support",
+        "isolation": "Read Committed default, Serializable for critical operations"
+      }
+    }
+  ],
+
+  "incident_response": {
+    "severity_levels": [
+      { "level": "P1", "description": "Complete outage", "response_time": "15 minutes", "resolution_target": "1 hour" },
+      { "level": "P2", "description": "Major feature unavailable", "response_time": "30 minutes", "resolution_target": "4 hours" },
+      { "level": "P3", "description": "Minor feature degraded", "response_time": "2 hours", "resolution_target": "24 hours" },
+      { "level": "P4", "description": "Cosmetic or minor issue", "response_time": "1 business day", "resolution_target": "1 week" }
+    ]
+  },
+
+  "traceability": {
+    "test_suite": "TS-NFR-REL"
+  },
+
+  "meta": {
+    "created_at": "2025-01-13T00:00:00Z",
+    "updated_at": "2025-01-13T00:00:00Z"
+  }
+}
