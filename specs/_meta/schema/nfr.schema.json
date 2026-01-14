@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nfr.schema.json",
+  "title": "Non-Functional Requirement Specification",
+  "description": "Schema for NFR specification files",
+  "type": "object",
+  "required": ["id", "name", "description", "version", "requirements"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this schema"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^NFR-[A-Z]{3}$",
+      "description": "Unique identifier (e.g., NFR-SEC, NFR-PER)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the NFR category"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version"
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "category", "priority", "statement"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^NFR-[A-Z]{3}-\\d{3}$",
+            "description": "Unique requirement ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Short name for the requirement"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category within the NFR"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["must", "should", "could", "wont"],
+            "description": "MoSCoW priority"
+          },
+          "statement": {
+            "type": "string",
+            "description": "The requirement statement"
+          },
+          "metric": {
+            "type": "object",
+            "description": "Measurable acceptance criteria"
+          },
+          "implementation": {
+            "type": "object",
+            "description": "Implementation guidance"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Why this requirement exists"
+          }
+        }
+      }
+    },
+    "testing": {
+      "type": "object",
+      "description": "Testing approach for these requirements"
+    },
+    "traceability": {
+      "type": "object",
+      "description": "Links to related artifacts"
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

@@ -1,0 +1,115 @@
+# OrbitOS Specification Manifest
+# This file helps AI assistants navigate the specification structure efficiently
+
+version: "1.0.0"
+description: "Single source of truth for all project specifications"
+
+# Quick navigation for common AI tasks
+quick_reference:
+  # When implementing a feature
+  implement_feature:
+    1_read_feature: "features/F###-*.json"
+    2_read_entities: "entities/ENT###-*.json (referenced in feature)"
+    3_check_nfr: "nfr/ (security, performance requirements)"
+    4_follow_standards: "_meta/ENGINEERING-STANDARDS.md"
+
+  # When adding a new entity
+  add_entity:
+    1_copy_template: "entities/_template.json"
+    2_define_fields: "Include all validation rules"
+    3_add_relationships: "Link to related entities"
+    4_update_index: "entities/index.json"
+
+  # When making architecture decisions
+  architecture_decision:
+    1_copy_template: "decisions/_template.md"
+    2_document_context: "Why is this decision needed?"
+    3_list_alternatives: "What options were considered?"
+    4_trace_impact: "Which specs are affected?"
+
+# Directory structure
+structure:
+  _meta:
+    description: "Standards, schemas, and templates"
+    contents:
+      - ENGINEERING-STANDARDS.md  # Non-negotiable coding standards
+      - schema/                    # JSON schemas for validation
+      - templates/                 # Code generation templates
+
+  entities:
+    description: "Domain model specifications (ENT###)"
+    pattern: "ENT###-{name}.json"
+    index: "entities/index.json"
+    template: "entities/_template.json"
+
+  features:
+    description: "Feature specifications (F###)"
+    pattern: "F###-{name}.json"
+    index: "features/index.json"
+    template: "features/_template.json"
+
+  decisions:
+    description: "Architecture Decision Records (ADR###)"
+    pattern: "ADR###-{title}.md"
+    template: "decisions/_template.md"
+
+  nfr:
+    description: "Non-Functional Requirements"
+    categories:
+      - NFR-SEC: Security (auth, authorization, encryption)
+      - NFR-PER: Performance (response times, throughput)
+      - NFR-SCA: Scalability (capacity, horizontal scaling)
+      - NFR-REL: Reliability (uptime, recovery, backups)
+      - NFR-USA: Usability (accessibility, UX)
+      - NFR-MNT: Maintainability (code quality, observability)
+
+# Naming conventions
+naming:
+  entities: "ENT### (3-digit, zero-padded)"
+  features: "F### (3-digit, zero-padded)"
+  decisions: "ADR### (3-digit, zero-padded)"
+  requirements: "NFR-{CAT}-### (category + 3-digit)"
+  validation_rules: "R-{ENT}-### (entity + 3-digit)"
+
+# Traceability rules
+traceability:
+  code_to_spec:
+    dotnet: "/// <remarks>ENTITY: ENT###</remarks>"
+    typescript: "// SPEC: F### - description"
+    test: "it('should enforce R-###: rule description')"
+
+  required_links:
+    - "Every entity field must have validation rules"
+    - "Every feature must reference entities it uses"
+    - "Every API endpoint must link to feature"
+    - "Every test must reference spec artifact"
+
+# Validation
+validation:
+  pre_commit:
+    - "All spec files must be valid JSON/YAML"
+    - "All IDs must be unique"
+    - "All references must resolve"
+  ci:
+    - "OpenAPI spec matches implementation"
+    - "Entity fields match database schema"
+    - "Test coverage meets NFR-MNT requirements"
+
+# AI Assistant Guidelines
+ai_guidelines:
+  before_coding:
+    - "Read the relevant spec file completely"
+    - "Understand all validation rules"
+    - "Check NFR requirements (especially security)"
+    - "Review ENGINEERING-STANDARDS.md"
+
+  during_coding:
+    - "Include traceability markers in code"
+    - "Follow naming conventions exactly"
+    - "Implement all validation rules"
+    - "Write tests referencing R-### IDs"
+
+  after_coding:
+    - "Verify all acceptance criteria met"
+    - "Run validation scripts"
+    - "Update spec status if needed"

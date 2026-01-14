@@ -1,0 +1,172 @@
+{
+  "$schema": "../_meta/schema/nfr.schema.json",
+  "id": "NFR-MNT",
+  "name": "Maintainability Requirements",
+  "description": "Code quality, observability, and operational requirements",
+  "version": "1.0.0",
+
+  "requirements": [
+    {
+      "id": "NFR-MNT-001",
+      "name": "Code Coverage",
+      "category": "code_quality",
+      "priority": "must",
+      "statement": "The system shall maintain minimum code coverage for tests",
+      "metric": {
+        "unit_tests": ">= 80%",
+        "integration_tests": ">= 60%",
+        "measurement": "CI pipeline coverage report"
+      }
+    },
+    {
+      "id": "NFR-MNT-002",
+      "name": "Type Safety",
+      "category": "code_quality",
+      "priority": "must",
+      "statement": "The system shall enforce strict type safety",
+      "implementation": {
+        "typescript": "strict: true, no 'any' types",
+        "csharp": "Nullable enabled, no 'dynamic'",
+        "ci_check": "Fail build on type errors"
+      }
+    },
+    {
+      "id": "NFR-MNT-003",
+      "name": "Code Style Consistency",
+      "category": "code_quality",
+      "priority": "must",
+      "statement": "The system shall enforce consistent code style via automated formatting",
+      "implementation": {
+        "formatter": "Prettier (TS/JS), dotnet format (C#)",
+        "linter": "ESLint / Roslyn Analyzers",
+        "pre_commit": "Automatic formatting on commit"
+      }
+    },
+    {
+      "id": "NFR-MNT-004",
+      "name": "Structured Logging",
+      "category": "observability",
+      "priority": "must",
+      "statement": "The system shall use structured JSON logging with correlation IDs",
+      "implementation": {
+        "format": "JSON",
+        "required_fields": ["timestamp", "level", "message", "correlation_id"],
+        "optional_fields": ["user_id", "org_id", "request_id"],
+        "levels": ["error", "warn", "info", "debug"]
+      }
+    },
+    {
+      "id": "NFR-MNT-005",
+      "name": "Application Metrics",
+      "category": "observability",
+      "priority": "must",
+      "statement": "The system shall expose application metrics for monitoring",
+      "implementation": {
+        "format": "Prometheus-compatible or equivalent",
+        "standard_metrics": [
+          "http_request_duration_seconds",
+          "http_requests_total",
+          "database_query_duration_seconds"
+        ]
+      }
+    },
+    {
+      "id": "NFR-MNT-006",
+      "name": "Distributed Tracing",
+      "category": "observability",
+      "priority": "should",
+      "statement": "The system shall support distributed tracing across services",
+      "implementation": {
+        "standard": "OpenTelemetry",
+        "propagation": "W3C Trace Context"
+      }
+    },
+    {
+      "id": "NFR-MNT-007",
+      "name": "Health Check Endpoints",
+      "category": "operations",
+      "priority": "must",
+      "statement": "The system shall expose health check endpoints for monitoring",
+      "endpoints": [
+        { "path": "/health", "purpose": "Basic liveness check (is the app running?)" },
+        { "path": "/health/ready", "purpose": "Readiness check (are dependencies healthy?)" }
+      ]
+    },
+    {
+      "id": "NFR-MNT-008",
+      "name": "Configuration Management",
+      "category": "operations",
+      "priority": "must",
+      "statement": "The system shall externalize all configuration from code",
+      "implementation": {
+        "env_vars": "Primary configuration method",
+        "secrets": "Secret manager for sensitive values",
+        "no_hardcoded": "No secrets in code or version control"
+      }
+    },
+    {
+      "id": "NFR-MNT-009",
+      "name": "Database Migrations",
+      "category": "operations",
+      "priority": "must",
+      "statement": "The system shall manage database schema changes via versioned migrations",
+      "implementation": {
+        "tool": "EF Core Migrations / equivalent",
+        "versioning": "Timestamped migration files",
+        "rollback": "Migrations should be reversible where possible"
+      }
+    },
+    {
+      "id": "NFR-MNT-010",
+      "name": "Documentation",
+      "category": "documentation",
+      "priority": "must",
+      "statement": "The system shall maintain up-to-date API and code documentation",
+      "implementation": {
+        "api_docs": "OpenAPI specification",
+        "code_docs": "XML/JSDoc comments for public APIs",
+        "architecture": "Architecture decision records (ADRs)"
+      }
+    },
+    {
+      "id": "NFR-MNT-011",
+      "name": "Dependency Management",
+      "category": "dependencies",
+      "priority": "must",
+      "statement": "The system shall keep dependencies updated",
+      "implementation": {
+        "automation": "Dependabot / Renovate PRs",
+        "policy": "Security updates within 48 hours",
+        "breaking_changes": "Test before major version updates"
+      }
+    },
+    {
+      "id": "NFR-MNT-012",
+      "name": "Deployment Automation",
+      "category": "ci_cd",
+      "priority": "must",
+      "statement": "The system shall support automated deployments",
+      "implementation": {
+        "pipeline": "GitHub Actions / equivalent",
+        "stages": ["lint", "test", "build", "deploy"],
+        "approval": "Production deployments may require manual approval"
+      }
+    }
+  ],
+
+  "code_review": {
+    "required": true,
+    "approvers": "At least 1 team member",
+    "checklist_reference": "_meta/ENGINEERING-STANDARDS.md#14-code-review-checklist"
+  },
+
+  "traceability": {
+    "engineering_standards": "_meta/ENGINEERING-STANDARDS.md",
+    "test_suite": "TS-NFR-MNT"
+  },
+
+  "meta": {
+    "created_at": "2025-01-13T00:00:00Z",
+    "updated_at": "2025-01-13T00:00:00Z"
+  }
+}
